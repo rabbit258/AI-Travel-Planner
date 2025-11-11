@@ -1,9 +1,10 @@
 "use client";
 
 import MicButton from "@/components/MicButton";
-import type { ChangeEvent } from "react";
+import { useRef, type ChangeEvent } from "react";
 
 type PlannerFormProps = {
+	origin?: string;
 	destination: string;
 	days?: number;
 	budget?: number;
@@ -13,6 +14,7 @@ type PlannerFormProps = {
 	withChildren: boolean;
 	language: "zh" | "en" | "ja";
 	loading: boolean;
+	onOriginChange: (value: string) => void;
 	onDestinationChange: (value: string) => void;
 	onDaysChange: (value: number | undefined) => void;
 	onBudgetChange: (value: number | undefined) => void;
@@ -31,6 +33,7 @@ function toNumber(event: ChangeEvent<HTMLInputElement>): number | undefined {
 
 export default function PlannerForm(props: PlannerFormProps) {
 	const {
+		origin,
 		destination,
 		days,
 		budget,
@@ -40,6 +43,7 @@ export default function PlannerForm(props: PlannerFormProps) {
 		withChildren,
 		language,
 		loading,
+		onOriginChange,
 		onDestinationChange,
 		onDaysChange,
 		onBudgetChange,
@@ -50,6 +54,25 @@ export default function PlannerForm(props: PlannerFormProps) {
 		onLanguageChange,
 		onGenerate,
 	} = props;
+
+	// Refs for input fields to support voice input
+	const originRef = useRef<HTMLInputElement>(null);
+	const destinationRef = useRef<HTMLInputElement>(null);
+	const daysRef = useRef<HTMLInputElement>(null);
+	const budgetRef = useRef<HTMLInputElement>(null);
+	const travelersRef = useRef<HTMLInputElement>(null);
+	const preferencesRef = useRef<HTMLTextAreaElement>(null);
+
+	// Get the currently focused input element
+	const getActiveElement = () => {
+		const active = document.activeElement;
+		if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) {
+			if (active.type !== "date" && active.tagName !== "SELECT") {
+				return active;
+			}
+		}
+		return null;
+	};
 
 	return (
 		<div className="space-y-6">
@@ -63,11 +86,24 @@ export default function PlannerForm(props: PlannerFormProps) {
 			<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
 				<div className="flex flex-col">
 					<label className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">
+						出发地
+					</label>
+					<input
+						ref={originRef}
+						className="input"
+						placeholder="湖南怀化"
+						value={origin ?? ""}
+						onChange={(e) => onOriginChange(e.target.value)}
+					/>
+				</div>
+				<div className="flex flex-col">
+					<label className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">
 						目的地
 					</label>
 					<input
+						ref={destinationRef}
 						className="input"
-						placeholder="东京、大阪、冲绳..."
+						placeholder="张家界"
 						value={destination}
 						onChange={(e) => onDestinationChange(e.target.value)}
 					/>
@@ -88,12 +124,13 @@ export default function PlannerForm(props: PlannerFormProps) {
 						旅行天数
 					</label>
 					<input
+						ref={daysRef}
 						type="number"
 						min={1}
 						value={days ?? ""}
 						onChange={(e) => onDaysChange(toNumber(e))}
 						className="input"
-						placeholder="5"
+						placeholder="2"
 					/>
 				</div>
 				<div className="flex flex-col">
@@ -101,12 +138,13 @@ export default function PlannerForm(props: PlannerFormProps) {
 						预算（人民币）
 					</label>
 					<input
+						ref={budgetRef}
 						type="number"
 						min={0}
 						value={budget ?? ""}
 						onChange={(e) => onBudgetChange(toNumber(e))}
 						className="input"
-						placeholder="10000"
+						placeholder="2000"
 					/>
 				</div>
 				<div className="flex flex-col">
@@ -114,6 +152,7 @@ export default function PlannerForm(props: PlannerFormProps) {
 						同行人数
 					</label>
 					<input
+						ref={travelersRef}
 						type="number"
 						min={1}
 						value={travelers ?? ""}
@@ -143,6 +182,7 @@ export default function PlannerForm(props: PlannerFormProps) {
 					旅行偏好
 				</label>
 				<textarea
+					ref={preferencesRef}
 					rows={2}
 					className="textarea"
 					placeholder="例如：亲子、美食、温泉、博物馆、动漫打卡..."
@@ -163,7 +203,10 @@ export default function PlannerForm(props: PlannerFormProps) {
 				</label>
 
 				<MicButton
-					onTranscript={(text) => onDestinationChange(destination ? `${destination} ${text}` : text)}
+					onTranscript={() => {
+						// 回调函数，但实际更新由 MicButton 内部处理
+					}}
+					onGetActiveElement={getActiveElement}
 					className="btn-outline"
 					lang={language === "zh" ? "zh-CN" : language === "ja" ? "ja-JP" : "en-US"}
 				/>

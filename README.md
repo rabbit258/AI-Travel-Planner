@@ -4,9 +4,10 @@ Travel AI Planner
 AI 驱动的旅行规划 Web 应用：支持语音/文字输入，自动生成行程路线与预算估计，地图展示、费用管理，以及云端同步。
 
 功能
-- 智能行程规划：输入目的地、天数、预算、人数、偏好，生成详细行程（交通、住宿、景点、美食），含费用估算
+- 智能行程规划：输入出发地、目的地、天数、预算、人数、偏好，生成详细行程（交通、住宿、景点、美食），含费用估算
+- 路径规划：基于百度地图 API 自动获取出发地到目的地的路线信息（距离、时间、路线指引）
 - 语音输入：基于浏览器 Web Speech API（可扩展接入科大讯飞）
-- 地图导航：高德地图 Web SDK 显示行程 POI
+- 地图导航：百度地图 Web SDK 显示行程 POI
 - 费用预算与管理：分类记录支出、汇总与预算对比
 - 用户管理与云同步：✅ 已实现
   - 注册/登录系统（邮箱密码认证）
@@ -18,7 +19,8 @@ AI 驱动的旅行规划 Web 应用：支持语音/文字输入，自动生成�
 - Next.js App Router + TypeScript
 - Tailwind CSS
 - Supabase（认证与存储）
-- 高德地图 Web SDK
+- 百度地图 Web 服务 API（地点检索、路径规划）
+- 百度地图 Web SDK（地图展示）
 - OpenAI 兼容大模型（可替换为任意兼容接口）
 
 本地开发
@@ -31,7 +33,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiY
 OPENAI_API_KEY=你的OpenAI API密钥
 OPENAI_BASE_URL=https://api.openai.com/v1
 OPENAI_MODEL=gpt-4o-mini
-NEXT_PUBLIC_AMAP_KEY=你的高德地图密钥（可选）
+BAIDU_MAP_AK=你的百度地图AK（必需，用于路径规划和地图展示）
+NEXT_PUBLIC_BAIDU_MAP_AK=你的百度地图AK（可选，如果设置了会优先使用，用于地图展示）
 ```
 
 2) 设置数据库
@@ -48,7 +51,8 @@ npm run dev
 
 注意事项
 - Node.js 版本：为获得最佳兼容性，建议 Node >= 20.9
-- 地图：需要在 `.env.local` 配置 `NEXT_PUBLIC_AMAP_KEY`
+- 百度地图 AK：需要在 `.env.local` 配置 `BAIDU_MAP_AK`（用于路径规划和地图展示）
+- 如果需要在客户端使用不同的 AK，可以配置 `NEXT_PUBLIC_BAIDU_MAP_AK`（用于地图展示）
 - 模型：`OPENAI_API_KEY` 可为任意兼容 OpenAI 的服务商密钥
 
 使用说明

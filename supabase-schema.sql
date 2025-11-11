@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS public.travel_plans (
 	id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
 	user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
 	title TEXT NOT NULL,
+	origin TEXT,
 	destination TEXT NOT NULL,
 	start_date DATE,
 	days INTEGER,

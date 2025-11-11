@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 export type Expense = {
 	id: string;
@@ -22,6 +22,13 @@ const categories: Expense["category"][] = ["交通", "住宿", "餐饮", "门票
 export default function ExpenseTracker({ initial = [], onChange, className, budgetCNY }: Props) {
 	const [items, setItems] = useState<Expense[]>(initial);
 	const [draft, setDraft] = useState<Partial<Expense>>({});
+
+	// 同步初始数据
+	useEffect(() => {
+		if (initial && initial.length >= 0) {
+			setItems(initial);
+		}
+	}, [initial]);
 
 	const totals = useMemo(() => {
 		const sum = items.reduce((acc, it) => acc + (it.amountCNY || 0), 0);

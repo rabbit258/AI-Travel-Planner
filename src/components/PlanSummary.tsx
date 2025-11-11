@@ -34,10 +34,13 @@ export default function PlanSummary({ plan }: PlanSummaryProps) {
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 				{transport.length > 0 && (
 					<div className="rounded-xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/80">
-						<h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">交通建议</h3>
-						<ul className="mt-2 space-y-1 text-sm text-slate-600 dark:text-slate-300">
+						<h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2">交通建议</h3>
+						<ul className="space-y-1.5 text-sm text-slate-600 dark:text-slate-300">
 							{transport.map((item, idx) => (
-								<li key={idx}>• {item}</li>
+								<li key={idx} className="flex items-start gap-2">
+									<span className="text-sky-500 mt-0.5">•</span>
+									<span className="flex-1">{typeof item === "string" ? item : String(item)}</span>
+								</li>
 							))}
 						</ul>
 					</div>
@@ -45,10 +48,13 @@ export default function PlanSummary({ plan }: PlanSummaryProps) {
 
 				{lodging.length > 0 && (
 					<div className="rounded-xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/80">
-						<h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">住宿推荐</h3>
-						<ul className="mt-2 space-y-1 text-sm text-slate-600 dark:text-slate-300">
+						<h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2">住宿推荐</h3>
+						<ul className="space-y-1.5 text-sm text-slate-600 dark:text-slate-300">
 							{lodging.map((item, idx) => (
-								<li key={idx}>• {item}</li>
+								<li key={idx} className="flex items-start gap-2">
+									<span className="text-sky-500 mt-0.5">•</span>
+									<span className="flex-1">{typeof item === "string" ? item : String(item)}</span>
+								</li>
 							))}
 						</ul>
 					</div>
@@ -56,10 +62,13 @@ export default function PlanSummary({ plan }: PlanSummaryProps) {
 
 				{restaurants.length > 0 && (
 					<div className="rounded-xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/80">
-						<h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">美食推荐</h3>
-						<ul className="mt-2 space-y-1 text-sm text-slate-600 dark:text-slate-300">
+						<h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2">美食推荐</h3>
+						<ul className="space-y-1.5 text-sm text-slate-600 dark:text-slate-300">
 							{restaurants.map((item, idx) => (
-								<li key={idx}>• {item}</li>
+								<li key={idx} className="flex items-start gap-2">
+									<span className="text-sky-500 mt-0.5">•</span>
+									<span className="flex-1">{typeof item === "string" ? item : String(item)}</span>
+								</li>
 							))}
 						</ul>
 					</div>
@@ -67,15 +76,19 @@ export default function PlanSummary({ plan }: PlanSummaryProps) {
 
 				{tips.length > 0 && (
 					<div className="rounded-xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/80">
-						<h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">旅行贴士</h3>
-						<ul className="mt-2 space-y-1 text-sm text-slate-600 dark:text-slate-300">
+						<h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2">旅行贴士</h3>
+						<ul className="space-y-1.5 text-sm text-slate-600 dark:text-slate-300">
 							{tips.map((item, idx) => (
-								<li key={idx}>• {item}</li>
+								<li key={idx} className="flex items-start gap-2">
+									<span className="text-sky-500 mt-0.5">•</span>
+									<span className="flex-1">{typeof item === "string" ? item : String(item)}</span>
+								</li>
 							))}
 						</ul>
 					</div>
 				)}
 			</div>
+
 
 			{breakdown.length > 0 && (
 				<div className="rounded-xl border border-slate-200 bg-slate-900/5 p-4 shadow-inner dark:border-slate-700 dark:bg-slate-100/5">

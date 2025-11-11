@@ -3,10 +3,11 @@
 import { useMemo, useState, useEffect } from "react";
 import PlannerForm from "@/components/PlannerForm";
 import PlanSummary from "@/components/PlanSummary";
-import MapView from "@/components/MapView";
+import RouteMap from "@/components/RouteMap";
 import ItineraryView from "@/components/ItineraryView";
 import ExpenseTracker, { type Expense } from "@/components/ExpenseTracker";
 import PlanManager from "@/components/PlanManager";
+import RouteInfo from "@/components/RouteInfo";
 import { useAuth } from "@/contexts/AuthContext";
 import { createClient } from "@/lib/supabase/client";
 import type { PlanResult, BudgetBreakdown } from "@/types/plan";
@@ -18,6 +19,7 @@ export default function Home() {
 	const { user } = useAuth();
 	const supabase = createClient();
 	const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
+	const [origin, setOrigin] = useState<string>("");
 	const [destination, setDestination] = useState("");
 	const [startDate, setStartDate] = useState<string | undefined>(undefined);
 	const [days, setDays] = useState<number | undefined>(undefined);
@@ -42,29 +44,62 @@ export default function Home() {
 
 	// Auto-save expenses to cloud when user is logged in and plan is saved
 	useEffect(() => {
-		if (!user || !currentPlanId || expenses.length === 0) return;
+		if (!user || !currentPlanId) return;
 
 		const saveExpenses = async () => {
 			try {
 				// Get existing expenses for this plan
-				const { data: existing } = await supabase
+				const { data: existing, error: fetchError } = await supabase
 					.from("expenses")
-					.select("id")
-					.eq("plan_id", currentPlanId);
+					.select("id, notes, amount_cny, category, expense_date")
+					.eq("plan_id", currentPlanId)
+					.eq("user_id", user.id);
 
-				const existingIds = new Set((existing || []).map((e) => e.id));
+				if (fetchError) {
+					console.error("获取费用失败:", fetchError);
+					return;
+				}
 
-				// Delete expenses that are no longer in the list
-				for (const exp of existing || []) {
-					if (!expenses.find((e) => e.id === exp.id)) {
-						await supabase.from("expenses").delete().eq("id", exp.id);
+				const existingExpenses = existing || [];
+				
+				// 创建现有费用的映射（使用 notes + amount_cny + category 作为唯一标识）
+				const existingMap = new Map<string, string>();
+				existingExpenses.forEach((exp) => {
+					const key = `${exp.notes || ""}_${exp.amount_cny}_${exp.category}`;
+					existingMap.set(key, exp.id);
+				});
+
+				// 创建当前费用的映射
+				const currentMap = new Map<string, Expense>();
+				expenses.forEach((exp) => {
+					const key = `${exp.title || ""}_${exp.amountCNY}_${exp.category}`;
+					currentMap.set(key, exp);
+				});
+
+				// 删除不再存在的费用
+				for (const exp of existingExpenses) {
+					const key = `${exp.notes || ""}_${exp.amount_cny}_${exp.category}`;
+					if (!currentMap.has(key)) {
+						const { error: deleteError } = await supabase
+							.from("expenses")
+							.delete()
+							.eq("id", exp.id)
+							.eq("user_id", user.id);
+						
+						if (deleteError) {
+							console.error("删除费用失败:", deleteError);
+						}
 					}
 				}
 
-				// Upsert expenses
+				// 插入或更新费用
 				for (const expense of expenses) {
-					if (existingIds.has(expense.id)) {
-						await supabase
+					const key = `${expense.title || ""}_${expense.amountCNY}_${expense.category}`;
+					const existingId = existingMap.get(key);
+
+					if (existingId) {
+						// 更新现有费用
+						const { error: updateError } = await supabase
 							.from("expenses")
 							.update({
 								category: expense.category,
@@ -72,31 +107,61 @@ export default function Home() {
 								notes: expense.title,
 								expense_date: expense.date || null,
 							})
-							.eq("id", expense.id);
+							.eq("id", existingId)
+							.eq("user_id", user.id);
+
+						if (updateError) {
+							console.error("更新费用失败:", updateError);
+						}
 					} else {
-						await supabase.from("expenses").insert({
-							id: expense.id,
-							plan_id: currentPlanId,
-							user_id: user.id,
-							category: expense.category,
-							amount_cny: expense.amountCNY,
-							notes: expense.title,
-							expense_date: expense.date || null,
-						});
+						// 插入新费用（让数据库自动生成 UUID）
+						const { data: newExpense, error: insertError } = await supabase
+							.from("expenses")
+							.insert({
+								plan_id: currentPlanId,
+								user_id: user.id,
+								category: expense.category,
+								amount_cny: expense.amountCNY,
+								notes: expense.title,
+								expense_date: expense.date || null,
+							})
+							.select()
+							.single();
+
+						if (insertError) {
+							console.error("插入费用失败:", insertError);
+							console.error("费用数据:", expense);
+						} else if (newExpense) {
+							// 更新本地费用 ID 为数据库生成的 UUID
+							setExpenses((prev) =>
+								prev.map((e) =>
+									e === expense ? { ...e, id: newExpense.id } : e
+								)
+							);
+						}
 					}
 				}
-			} catch (err) {
-				console.error("保存费用失败:", err);
+			} catch (err: any) {
+				console.error("保存费用失败 - 异常:", err);
+				console.error("错误详情:", {
+					message: err?.message,
+					code: err?.code,
+					details: err?.details,
+				});
 			}
 		};
 
-		const timer = setTimeout(saveExpenses, 1000);
-		return () => clearTimeout(timer);
+		// 只有在有费用或需要清理时才执行
+		if (expenses.length > 0 || currentPlanId) {
+			const timer = setTimeout(saveExpenses, 1000);
+			return () => clearTimeout(timer);
+		}
 	}, [expenses, currentPlanId, user, supabase]);
 
 	function handleLoadPlan(
 		loadedPlan: PlanResult,
 		inputs: {
+			origin?: string;
 			destination: string;
 			startDate?: string;
 			days?: number;
@@ -109,6 +174,7 @@ export default function Home() {
 		loadedExpenses: any[]
 	) {
 		setPlan(loadedPlan);
+		setOrigin(inputs.origin || "");
 		setDestination(inputs.destination);
 		setStartDate(inputs.startDate);
 		setDays(inputs.days);
@@ -133,10 +199,12 @@ export default function Home() {
 		if (!destination) return;
 		setLoading(true);
 		try {
+			// 1. 生成行程计划
 			const res = await fetch("/api/plan", {
 				method: "POST",
 				headers: { "content-type": "application/json" },
 				body: JSON.stringify({
+					origin,
 					destination,
 					startDate,
 					days,
@@ -153,7 +221,26 @@ export default function Home() {
 			const raw = (await res.json()) as Partial<PlanResult>;
 			const toStringArray = (value: PlanResult["transport"]) => {
 				if (!value) return [];
-				return Array.isArray(value) ? value.map((item) => String(item)) : [String(value)];
+				if (!Array.isArray(value)) {
+					// 如果是单个值，转换为数组
+					if (typeof value === "string") return [value];
+					if (typeof value === "object") {
+						// 如果是对象，尝试提取 name、title 或 description
+						const obj = value as any;
+						return [obj.name || obj.title || obj.description || JSON.stringify(obj)];
+					}
+					return [String(value)];
+				}
+				// 如果是数组，处理每个元素
+				return value.map((item) => {
+					if (typeof item === "string") return item;
+					if (typeof item === "object" && item !== null) {
+						// 如果是对象，尝试提取有用的字段
+						const obj = item as any;
+						return obj.name || obj.title || obj.description || obj.text || JSON.stringify(obj);
+					}
+					return String(item);
+				});
 			};
 			const normalizeBreakdown = (list?: BudgetBreakdown[]): BudgetBreakdown[] =>
 				(list ?? []).map((item) => ({
@@ -177,6 +264,30 @@ export default function Home() {
 				tips: toStringArray(raw.tips),
 				budgetBreakdown: normalizeBreakdown(raw.budgetBreakdown),
 			};
+
+			// 2. 如果有出发地和目的地，获取路径信息
+			if (origin && destination) {
+				try {
+					const routeRes = await fetch("/api/baidu-map", {
+						method: "POST",
+						headers: { "content-type": "application/json" },
+						body: JSON.stringify({ origin, destination }),
+					});
+					
+					if (routeRes.ok) {
+						const routeData = await routeRes.json();
+						normalized.originLocation = routeData.originLocation;
+						normalized.destinationLocation = routeData.destinationLocation;
+						normalized.routeInfo = routeData.routeInfo;
+					} else {
+						console.warn("获取路径信息失败:", await routeRes.text());
+					}
+				} catch (routeError) {
+					console.error("获取路径信息异常:", routeError);
+					// 不阻止计划生成，只是没有路径信息
+				}
+			}
+
 			setPlan(normalized);
 		} catch (e) {
 			console.error(e);
@@ -186,7 +297,7 @@ export default function Home() {
 		}
 	}
 
-	return (
+  return (
 		<div className="space-y-10">
 			<section className={gradientBackground}>
 				<div className="absolute -top-24 right-8 size-48 rounded-full bg-sky-300/30 blur-3xl dark:bg-sky-500/20" />
@@ -201,8 +312,8 @@ export default function Home() {
 						</h1>
 						<p className="text-sm text-slate-600 dark:text-slate-300">
 							一站式行程规划、预算分析、地图导航与实时提醒。语音或文字输入，一键生成个性化旅行方案，随时调整，轻松同步。
-						</p>
-					</div>
+          </p>
+        </div>
 					<div className="grid w-full max-w-md gap-3 rounded-2xl border border-white/60 bg-white/80 p-4 text-sm shadow-lg backdrop-blur dark:border-slate-800 dark:bg-slate-900/70">
 						<div className="flex items-center justify-between">
 							<span className="text-slate-500 dark:text-slate-400">预计行程预算</span>
@@ -229,6 +340,7 @@ export default function Home() {
 			<section className="grid grid-cols-1 xl:grid-cols-3 gap-6">
 				<div className="xl:col-span-2 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
 					<PlannerForm
+						origin={origin}
 						destination={destination}
 						startDate={startDate}
 						days={days}
@@ -238,6 +350,7 @@ export default function Home() {
 						withChildren={withChildren}
 						language={language}
 						loading={loading}
+						onOriginChange={setOrigin}
 						onDestinationChange={setDestination}
 						onStartDateChange={setStartDate}
 						onDaysChange={setDays}
@@ -265,13 +378,29 @@ export default function Home() {
 
 			{plan && (
 				<section className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-					<div className="xl:col-span-2 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-						{allPOIs.length > 0 ? (
-							<MapView pois={allPOIs} height={420} className="rounded-2xl overflow-hidden" />
-						) : (
-							<div className="flex h-64 items-center justify-center rounded-2xl border border-dashed border-slate-300 text-sm text-slate-400 dark:border-slate-700 dark:text-slate-500">
-								暂无定位信息，尝试再次生成行程获取地图推荐。
-							</div>
+					<div className="xl:col-span-2 space-y-4">
+						<div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950 overflow-hidden">
+							{plan.originLocation && plan.destinationLocation ? (
+								<RouteMap
+									originLocation={plan.originLocation}
+									destinationLocation={plan.destinationLocation}
+									routeInfo={plan.routeInfo}
+									pois={allPOIs}
+									height={420}
+									className="rounded-2xl overflow-hidden"
+								/>
+							) : (
+								<div className="flex h-64 items-center justify-center rounded-2xl border border-dashed border-slate-300 text-sm text-slate-400 dark:border-slate-700 dark:text-slate-500">
+									暂无路线信息，请填写出发地和目的地。
+								</div>
+							)}
+						</div>
+						{plan.routeInfo && (
+							<RouteInfo
+								routeInfo={plan.routeInfo}
+								originLocation={plan.originLocation}
+								destinationLocation={plan.destinationLocation}
+							/>
 						)}
 					</div>
 					<div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
@@ -295,6 +424,7 @@ export default function Home() {
 					<PlanManager
 						currentPlan={plan}
 						planInputs={{
+							origin,
 							destination,
 							startDate,
 							days,
@@ -308,8 +438,8 @@ export default function Home() {
 						onLoadPlan={handleLoadPlan}
 						onPlanIdChange={setCurrentPlanId}
 					/>
-				</div>
+        </div>
 			</section>
-		</div>
-	);
+    </div>
+  );
 }

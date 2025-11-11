@@ -17,11 +17,19 @@
 - 自动触发器，在用户注册时创建用户资料
 - 自动更新时间戳的触发器
 
-## 步骤 2: 验证设置
+## 步骤 2: 数据库迁移（如果已存在旧数据库）
+
+如果你之前已经执行过 `supabase-schema.sql`，现在需要添加"出发地"字段，请执行：
+
+1. 在 Supabase SQL Editor 中执行 `database-migration-add-origin.sql` 文件
+2. 这将为 `travel_plans` 表添加 `origin` 字段
+3. 如果现有数据中有存储在 `plan_data` JSONB 中的 `origin`，会自动迁移到新字段
+
+## 步骤 3: 验证设置
 
 执行 SQL 后，你应该能在 Supabase Dashboard 的 **Table Editor** 中看到这三个表。
 
-## 步骤 3: 测试认证
+## 步骤 4: 测试认证
 
 1. 启动应用：`npm run dev`
 2. 点击右上角的"登录"按钮
