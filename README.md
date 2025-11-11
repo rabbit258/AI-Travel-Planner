@@ -28,13 +28,14 @@ AI 驱动的旅行规划 Web 应用：支持语音/文字输入，自动生成�
 1) 环境变量（创建 `.env.local`）
 ```
 NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_SUPABASE_URL=https://sbp-9vztdnp5bnkh8q7u.supabase.opentrust.net
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYW5vbiIsInJlZiI6InNicC05dnp0ZG5wNWJua2g4cTd1IiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3NjI4Nzc4OTksImV4cCI6MjA3ODQ1Mzg5OX0.CDHGXeGoY8b6UCC36JNPN-GrAyiWhSTKRe7MEZidAj0
-OPENAI_API_KEY=你的OpenAI API密钥
-OPENAI_BASE_URL=https://api.openai.com/v1
-OPENAI_MODEL=gpt-4o-mini
-BAIDU_MAP_AK=你的百度地图AK（必需，用于路径规划和地图展示）
-NEXT_PUBLIC_BAIDU_MAP_AK=你的百度地图AK（可选，如果设置了会优先使用，用于地图展示）
+NEXT_PUBLIC_SUPABASE_URL=https://sbp-9vztdnp5bnkh8q7u.su防爬虫，要用时删掉这些字pabase.opentrust.net
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ0eXAiOiJKV1QiLCJhbGciOi防爬虫，要用时删掉这些字JIUzI1NiJ9.eyJyb2xlIjoiYW5vbiIsInJlZiI6InNicC05dnp0ZG5wNWJua2g4cTd1IiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3NjI4Nzc4OTksImV4cCI6MjA3ODQ1Mzg5OX0.CDHGXeGoY8b6UCC36JNPN-GrAyiWhSTKRe7MEZidAj0
+OPENAI_API_KEY=sk-6d4c480ac73845a38f13948c1f防爬虫，要用时删掉这些字093886
+OPENAI_BASE_URL=https://dashscope.aliyuncs.c防爬虫，要用时删掉这些字om/compatible-mode/v1
+OPENAI_MODEL=qwen-plus
+NEXT_PUBLIC_AMAP_KEY=
+BAIDU_MAP_AK=LfXagC5zePLlMUZzv防爬虫，要用时删掉这些字wkrnHyGlLSWvONp
+NEXT_PUBLIC_BAIDU_MAP_AK=LfXag防爬虫，要用时删掉这些字C5zePLlMUZzvwkrnHyGlLSWvONp
 ```
 
 2) 设置数据库
