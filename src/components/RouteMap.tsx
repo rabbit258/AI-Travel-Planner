@@ -225,74 +225,74 @@ export default function RouteMap({
 			map.fitBounds(bounds, { padding: [50, 50] });
 		}
 
-		// 添加 POI 标记（去重，避免重复显示）
-		// 使用 Set 根据坐标去重
-		const uniquePOIs = new Map<string, POI>();
-		pois.forEach((poi) => {
-			const key = `${poi.lat.toFixed(4)}_${poi.lng.toFixed(4)}`;
-			if (!uniquePOIs.has(key)) {
-				uniquePOIs.set(key, poi);
-			}
-		});
+		// // 添加 POI 标记（去重，避免重复显示）
+		// // 使用 Set 根据坐标去重
+		// const uniquePOIs = new Map<string, POI>();
+		// pois.forEach((poi) => {
+		// 	const key = `${poi.lat.toFixed(4)}_${poi.lng.toFixed(4)}`;
+		// 	if (!uniquePOIs.has(key)) {
+		// 		uniquePOIs.set(key, poi);
+		// 	}
+		// });
 
-		uniquePOIs.forEach((poi) => {
-			// 跳过与出发地或目的地相同的POI
-			if (originLocation && 
-				Math.abs(poi.lat - originLocation.lat) < 0.001 && 
-				Math.abs(poi.lng - originLocation.lng) < 0.001) {
-				return;
-			}
-			if (destinationLocation && 
-				Math.abs(poi.lat - destinationLocation.lat) < 0.001 && 
-				Math.abs(poi.lng - destinationLocation.lng) < 0.001) {
-				return;
-			}
+		// uniquePOIs.forEach((poi) => {
+		// 	// 跳过与出发地或目的地相同的POI
+		// 	if (originLocation && 
+		// 		Math.abs(poi.lat - originLocation.lat) < 0.001 && 
+		// 		Math.abs(poi.lng - originLocation.lng) < 0.001) {
+		// 		return;
+		// 	}
+		// 	if (destinationLocation && 
+		// 		Math.abs(poi.lat - destinationLocation.lat) < 0.001 && 
+		// 		Math.abs(poi.lng - destinationLocation.lng) < 0.001) {
+		// 		return;
+		// 	}
 
-			const poiIcon = window.L.divIcon({
-				className: "custom-marker poi-marker",
-				html: `<div style="
-					width: 16px;
-					height: 16px;
-					background: #8b5cf6;
-					border: 2px solid white;
-					border-radius: 50%;
-					box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-				"></div>`,
-				iconSize: [16, 16],
-				iconAnchor: [8, 8],
-			});
+		// 	const poiIcon = window.L.divIcon({
+		// 		className: "custom-marker poi-marker",
+		// 		html: `<div style="
+		// 			width: 16px;
+		// 			height: 16px;
+		// 			background: #8b5cf6;
+		// 			border: 2px solid white;
+		// 			border-radius: 50%;
+		// 			box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+		// 		"></div>`,
+		// 		iconSize: [16, 16],
+		// 		iconAnchor: [8, 8],
+		// 	});
 
-			const poiMarker = window.L.marker([poi.lat, poi.lng], {
-				icon: poiIcon,
-			})
-				.addTo(map)
-				.bindPopup(`<b>${poi.name}</b>`);
+		// 	const poiMarker = window.L.marker([poi.lat, poi.lng], {
+		// 		icon: poiIcon,
+		// 	})
+		// 		.addTo(map)
+		// 		.bindPopup(`<b>${poi.name}</b>`);
 
-			markersRef.current.push(poiMarker);
-		});
+		// 	markersRef.current.push(poiMarker);
+		// });
 
-		// 如果有 POI，调整视野包含所有点
-		if (uniquePOIs.size > 0 && (originLocation || destinationLocation)) {
-			const allPoints: [number, number][] = [];
-			if (originLocation) allPoints.push([originLocation.lat, originLocation.lng]);
-			if (destinationLocation) allPoints.push([destinationLocation.lat, destinationLocation.lng]);
-			uniquePOIs.forEach((poi) => {
-				// 只添加不与出发地/目的地重复的POI
-				if (!(originLocation && 
-					Math.abs(poi.lat - originLocation.lat) < 0.001 && 
-					Math.abs(poi.lng - originLocation.lng) < 0.001) &&
-					!(destinationLocation && 
-					Math.abs(poi.lat - destinationLocation.lat) < 0.001 && 
-					Math.abs(poi.lng - destinationLocation.lng) < 0.001)) {
-					allPoints.push([poi.lat, poi.lng]);
-				}
-			});
+		// // 如果有 POI，调整视野包含所有点
+		// if (uniquePOIs.size > 0 && (originLocation || destinationLocation)) {
+		// 	const allPoints: [number, number][] = [];
+		// 	if (originLocation) allPoints.push([originLocation.lat, originLocation.lng]);
+		// 	if (destinationLocation) allPoints.push([destinationLocation.lat, destinationLocation.lng]);
+		// 	uniquePOIs.forEach((poi) => {
+		// 		// 只添加不与出发地/目的地重复的POI
+		// 		if (!(originLocation && 
+		// 			Math.abs(poi.lat - originLocation.lat) < 0.001 && 
+		// 			Math.abs(poi.lng - originLocation.lng) < 0.001) &&
+		// 			!(destinationLocation && 
+		// 			Math.abs(poi.lat - destinationLocation.lat) < 0.001 && 
+		// 			Math.abs(poi.lng - destinationLocation.lng) < 0.001)) {
+		// 			allPoints.push([poi.lat, poi.lng]);
+		// 		}
+		// 	});
 
-			if (allPoints.length > 0) {
-				const bounds = window.L.latLngBounds(allPoints);
-				map.fitBounds(bounds, { padding: [50, 50] });
-			}
-		}
+		// 	if (allPoints.length > 0) {
+		// 		const bounds = window.L.latLngBounds(allPoints);
+		// 		map.fitBounds(bounds, { padding: [50, 50] });
+		// 	}
+		// }
 	}, [originLocation, destinationLocation, routeInfo, pois]);
 
 	return (
