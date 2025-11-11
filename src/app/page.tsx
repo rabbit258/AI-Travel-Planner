@@ -1,17 +1,23 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import PlannerForm from "@/components/PlannerForm";
 import PlanSummary from "@/components/PlanSummary";
 import MapView from "@/components/MapView";
 import ItineraryView from "@/components/ItineraryView";
 import ExpenseTracker, { type Expense } from "@/components/ExpenseTracker";
+import PlanManager from "@/components/PlanManager";
+import { useAuth } from "@/contexts/AuthContext";
+import { createClient } from "@/lib/supabase/client";
 import type { PlanResult, BudgetBreakdown } from "@/types/plan";
 
 const gradientBackground =
 	"relative isolate overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-sky-100 via-white to-white p-8 shadow-lg dark:border-slate-800 dark:from-slate-900 dark:via-slate-950 dark:to-slate-950";
 
 export default function Home() {
+	const { user } = useAuth();
+	const supabase = createClient();
+	const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
 	const [destination, setDestination] = useState("");
 	const [startDate, setStartDate] = useState<string | undefined>(undefined);
 	const [days, setDays] = useState<number | undefined>(undefined);
@@ -33,6 +39,95 @@ export default function Home() {
 		() => plan?.itineraryByDay?.flatMap((day) => day.mapPOIs) ?? [],
 		[plan?.itineraryByDay]
 	);
+
+	// Auto-save expenses to cloud when user is logged in and plan is saved
+	useEffect(() => {
+		if (!user || !currentPlanId || expenses.length === 0) return;
+
+		const saveExpenses = async () => {
+			try {
+				// Get existing expenses for this plan
+				const { data: existing } = await supabase
+					.from("expenses")
+					.select("id")
+					.eq("plan_id", currentPlanId);
+
+				const existingIds = new Set((existing || []).map((e) => e.id));
+
+				// Delete expenses that are no longer in the list
+				for (const exp of existing || []) {
+					if (!expenses.find((e) => e.id === exp.id)) {
+						await supabase.from("expenses").delete().eq("id", exp.id);
+					}
+				}
+
+				// Upsert expenses
+				for (const expense of expenses) {
+					if (existingIds.has(expense.id)) {
+						await supabase
+							.from("expenses")
+							.update({
+								category: expense.category,
+								amount_cny: expense.amountCNY,
+								notes: expense.title,
+								expense_date: expense.date || null,
+							})
+							.eq("id", expense.id);
+					} else {
+						await supabase.from("expenses").insert({
+							id: expense.id,
+							plan_id: currentPlanId,
+							user_id: user.id,
+							category: expense.category,
+							amount_cny: expense.amountCNY,
+							notes: expense.title,
+							expense_date: expense.date || null,
+						});
+					}
+				}
+			} catch (err) {
+				console.error("保存费用失败:", err);
+			}
+		};
+
+		const timer = setTimeout(saveExpenses, 1000);
+		return () => clearTimeout(timer);
+	}, [expenses, currentPlanId, user, supabase]);
+
+	function handleLoadPlan(
+		loadedPlan: PlanResult,
+		inputs: {
+			destination: string;
+			startDate?: string;
+			days?: number;
+			budget?: number;
+			travelers?: number;
+			preferences: string;
+			withChildren: boolean;
+			language: "zh" | "en" | "ja";
+		},
+		loadedExpenses: any[]
+	) {
+		setPlan(loadedPlan);
+		setDestination(inputs.destination);
+		setStartDate(inputs.startDate);
+		setDays(inputs.days);
+		setBudget(inputs.budget);
+		setTravelers(inputs.travelers);
+		setPreferences(inputs.preferences);
+		setWithChildren(inputs.withChildren);
+		setLanguage(inputs.language);
+		setExpenses(
+			loadedExpenses.map((e) => ({
+				id: e.id,
+				category: e.category as Expense["category"],
+				title: e.notes || "",
+				amountCNY: Number(e.amount_cny),
+				date: e.expense_date || undefined,
+			}))
+		);
+		// Note: currentPlanId will be set by PlanManager's onPlanIdChange callback
+	}
 
 	async function generatePlan() {
 		if (!destination) return;
@@ -188,12 +283,32 @@ export default function Home() {
 				</section>
 			)}
 
-			<section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-				<ExpenseTracker
-					initial={[]}
-					budgetCNY={plan?.totalEstimatedCost ?? budget}
-					onChange={setExpenses}
-				/>
+			<section className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+				<div className="xl:col-span-2 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+					<ExpenseTracker
+						initial={expenses}
+						budgetCNY={plan?.totalEstimatedCost ?? budget}
+						onChange={setExpenses}
+					/>
+				</div>
+				<div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+					<PlanManager
+						currentPlan={plan}
+						planInputs={{
+							destination,
+							startDate,
+							days,
+							budget,
+							travelers,
+							preferences,
+							withChildren,
+							language,
+						}}
+						expenses={expenses}
+						onLoadPlan={handleLoadPlan}
+						onPlanIdChange={setCurrentPlanId}
+					/>
+				</div>
 			</section>
 		</div>
 	);
