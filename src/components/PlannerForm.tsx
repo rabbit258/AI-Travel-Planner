@@ -167,7 +167,7 @@ export default function PlannerForm(props: PlannerFormProps) {
 					</label>
 					<select
 						value={language}
-						onChange={(e) => onLanguageChange(e.target.value)}
+						onChange={(e) => onLanguageChange(e.target.value as "zh" | "en" | "ja")}
 						className="select"
 					>
 						<option value="zh">中文</option>
