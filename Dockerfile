@@ -9,7 +9,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # 禁用 Next.js 遥测数据
-ENV NEXT_TELEMETRY_DISABLED 1
+ENV NEXT_TELEMETRY_DISABLED=1
 
 # 复制 package.json 和 package-lock.json (或 yarn.lock, pnpm-lock.yaml)
 COPY package*.json ./
@@ -30,9 +30,9 @@ FROM node:20-alpine
 WORKDIR /app
 
 # 设置为生产环境
-ENV NODE_ENV production
+ENV NODE_ENV=production
 # 禁用 Next.js 遥测数据
-ENV NEXT_TELEMETRY_DISABLED 1
+ENV NEXT_TELEMETRY_DISABLED=1
 
 # 从 "builder" 阶段复制 Next.js 的 standalone 输出
 # 这包含了运行服务器所需的最少文件
@@ -47,7 +47,7 @@ USER node
 EXPOSE 3000
 
 # 设置端口环境变量
-ENV PORT 3000
+ENV PORT=3000
 
 # 启动 Next.js 生产服务器 (standalone 模式的入口是 server.js)
 CMD ["node", "server.js"]

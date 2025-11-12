@@ -4,13 +4,21 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 const missingConfigError =
 	"Supabase 环境变量未配置。请设置 NEXT_PUBLIC_SUPABASE_URL 与 NEXT_PUBLIC_SUPABASE_ANON_KEY。";
 
-type PlaceholderSupabase = SupabaseClient<any, "public", any>;
+const missingConfig = new Error(missingConfigError);
 
-const placeholderQueryBuilder: any = {
-	select: () => Promise.reject(new Error(missingConfigError)),
-	insert: () => Promise.reject(new Error(missingConfigError)),
-	update: () => Promise.reject(new Error(missingConfigError)),
-	delete: () => Promise.reject(new Error(missingConfigError)),
+const placeholderBuilder: any = {
+	select() {
+		return this;
+	},
+	insert() {
+		return this;
+	},
+	update() {
+		return this;
+	},
+	delete() {
+		return this;
+	},
 	eq() {
 		return this;
 	},
@@ -20,15 +28,36 @@ const placeholderQueryBuilder: any = {
 	single() {
 		return this;
 	},
+	maybeSingle() {
+		return this;
+	},
+	throwOnError() {
+		return this;
+	},
+	then(onFulfilled?: any, onRejected?: any) {
+		return Promise.reject(missingConfig).then(onFulfilled, onRejected);
+	},
+	catch(onRejected?: any) {
+		return Promise.reject(missingConfig).catch(onRejected);
+	},
+	finally(onFinally?: any) {
+		return Promise.reject(missingConfig).finally(onFinally);
+	},
 };
 
-const placeholderClient: PlaceholderSupabase = {
+const placeholderClient = {
 	auth: {
 		async getSession() {
 			if (process.env.NODE_ENV !== "production") {
 				console.warn(missingConfigError);
 			}
-			return { data: { session: null }, error: new Error(missingConfigError) };
+			return { data: { session: null }, error: missingConfig };
+		},
+		async getUser() {
+			if (process.env.NODE_ENV !== "production") {
+				console.warn(missingConfigError);
+			}
+			return { data: { user: null }, error: missingConfig };
 		},
 		onAuthStateChange() {
 			if (process.env.NODE_ENV !== "production") {
@@ -42,26 +71,26 @@ const placeholderClient: PlaceholderSupabase = {
 						},
 					},
 				},
-				error: new Error(missingConfigError),
+				error: missingConfig,
 			};
 		},
 		async signInWithPassword() {
-			return { data: null, error: new Error(missingConfigError) };
+			return { data: null, error: missingConfig };
 		},
 		async signUp() {
-			return { data: null, error: new Error(missingConfigError) };
+			return { data: null, error: missingConfig };
 		},
 		async signOut() {
-			return { error: new Error(missingConfigError) };
+			return { error: missingConfig };
 		},
-	} as PlaceholderSupabase["auth"],
+	},
 	from() {
 		if (process.env.NODE_ENV !== "production") {
 			console.warn(missingConfigError);
 		}
-		return placeholderQueryBuilder;
+		return placeholderBuilder;
 	},
-} as unknown as PlaceholderSupabase;
+} as unknown as SupabaseClient;
 
 let browserClient: SupabaseClient | null = null;
 
