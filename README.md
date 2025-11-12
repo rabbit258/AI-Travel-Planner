@@ -64,7 +64,25 @@ GitHub Actions 会使用 `docker/build-push-action@v5` 构建并推送镜像到�
    docker build -t travel-ai-planner:local .
    docker run --rm -p 3000:3000 --env-file ./env.prod travel-ai-planner:local
    ```
-   这将在本地使用当前代码重新构建镜像，便于调试 CI/CD 以外的改动。
+  这将在本地使用当前代码重新构建镜像，便于调试 CI/CD 以外的改动。
+
+GitHub Actions 配置
+-------------------
+
+若使用仓库内的 `docker-push-acr.yml` 自动构建，需要在 GitHub 项目的 `Settings → Secrets and variables → Actions` 页面中添加下列 Secrets：
+
+- `ACR_REGISTRY`、`ACR_USERNAME`、`ACR_PASSWORD`（阿里云 ACR 登录）
+- `NEXT_PUBLIC_APP_URL`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `OPENAI_API_KEY`
+- `OPENAI_BASE_URL`
+- `OPENAI_MODEL`
+- `NEXT_PUBLIC_AMAP_KEY`
+- `BAIDU_MAP_AK`
+- `NEXT_PUBLIC_BAIDU_MAP_AK`
+
+上述值将以 `--build-arg` 形式注入 Docker 构建阶段，确保 Next.js 在 CI 环境下也能读取到必需的环境变量。若某些服务暂未启用，可以先将对应 Secret 设置为占位字符串。
 
 本地开发
 

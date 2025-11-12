@@ -64,3 +64,13 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }} # 自动添加镜像元数据
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
+          build-args: |
+            NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }}
+            NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            OPENAI_BASE_URL=${{ secrets.OPENAI_BASE_URL }}
+            OPENAI_MODEL=${{ secrets.OPENAI_MODEL }}
+            NEXT_PUBLIC_AMAP_KEY=${{ secrets.NEXT_PUBLIC_AMAP_KEY }}
+            BAIDU_MAP_AK=${{ secrets.BAIDU_MAP_AK }}
+            NEXT_PUBLIC_BAIDU_MAP_AK=${{ secrets.NEXT_PUBLIC_BAIDU_MAP_AK }}
