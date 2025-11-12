@@ -23,19 +23,62 @@ AI 驱动的旅行规划 Web 应用：支持语音/文字输入，自动生成�
 - 百度地图 Web SDK（地图展示）
 - OpenAI 兼容大模型（可替换为任意兼容接口）
 
+Docker 镜像
+-----------
+
+GitHub Actions 会使用 `docker/build-push-action@v5` 构建并推送镜像到私有/公有仓库（例如 `***/1604456428/homework`）。在任意主机上拉取并运行镜像的步骤如下：
+
+1. **拉取镜像**
+   ```
+   docker pull <registry>/<namespace>/homework:latest
+   ```
+
+2. **准备环境变量**
+   推荐创建 `env.prod` 文件集中管理变量：
+   ```
+   NEXT_PUBLIC_APP_URL=https://your-domain.com
+   NEXT_PUBLIC_SUPABASE_URL=... # 必填
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=... # 必填
+   OPENAI_API_KEY=...           # 若需行程生成
+   OPENAI_BASE_URL=...
+   OPENAI_MODEL=qwen-plus
+   BAIDU_MAP_AK=...             # 若需路径规划
+   NEXT_PUBLIC_BAIDU_MAP_AK=... # 若需地图展示
+   ```
+   - **必填**：`NEXT_PUBLIC_SUPABASE_URL`、`NEXT_PUBLIC_SUPABASE_ANON_KEY`。镜像内置容错机制，在缺失时会以占位 Supabase 客户端启动，前端功能仍可浏览但无法登录/保存数据。
+   - **可选**：模型与地图 AK 可按需覆盖；如未提供，对应功能会在运行时提示。
+
+3. **启动容器**
+   ```
+   docker run -d \
+     --name travel-ai-planner \
+     --env-file ./env.prod \
+     -p 3000:3000 \
+     <registry>/<namespace>/homework:latest
+   ```
+   - 进程以非 root `node` 用户运行，默认监听 `3000` 端口。
+   - 若部署在云主机/内网，可配合 `nginx` 或 LB 暴露 HTTPS。
+
+4. **自定义构建（可选）**
+   ```
+   docker build -t travel-ai-planner:local .
+   docker run --rm -p 3000:3000 --env-file ./env.prod travel-ai-planner:local
+   ```
+   这将在本地使用当前代码重新构建镜像，便于调试 CI/CD 以外的改动。
+
 本地开发
 
 1) 环境变量（创建 `.env.local`）
 ```
 NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_SUPABASE_URL=https://sbp-9vztdnp5bnkh8q7u.su防爬虫，要用时删掉这些字pabase.opentrust.net
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ0eXAiOiJKV1QiLCJhbGciOi防爬虫，要用时删掉这些字JIUzI1NiJ9.eyJyb2xlIjoiYW5vbiIsInJlZiI6InNicC05dnp0ZG5wNWJua2g4cTd1IiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3NjI4Nzc4OTksImV4cCI6MjA3ODQ1Mzg5OX0.CDHGXeGoY8b6UCC36JNPN-GrAyiWhSTKRe7MEZidAj0
-OPENAI_API_KEY=sk-6d4c480ac73845a38f13948c1f防爬虫，要用时删掉这些字093886
-OPENAI_BASE_URL=https://dashscope.aliyuncs.c防爬虫，要用时删掉这些字om/compatible-mode/v1
+NEXT_PUBLIC_SUPABASE_URL=<your-supabase-url>
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-supabase-anon-key>
+OPENAI_API_KEY=<your-model-api-key>
+OPENAI_BASE_URL=<your-model-base-url>
 OPENAI_MODEL=qwen-plus
 NEXT_PUBLIC_AMAP_KEY=
-BAIDU_MAP_AK=LfXagC5zePLlMUZzv防爬虫，要用时删掉这些字wkrnHyGlLSWvONp
-NEXT_PUBLIC_BAIDU_MAP_AK=LfXag防爬虫，要用时删掉这些字C5zePLlMUZzvwkrnHyGlLSWvONp
+BAIDU_MAP_AK=<your-baidu-server-ak>
+NEXT_PUBLIC_BAIDU_MAP_AK=<your-baidu-browser-ak>
 ```
 
 2) 设置数据库
