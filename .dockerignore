@@ -1,0 +1,26 @@
+忽略所有 node_modules，我们会在 Docker 内部安装
+
+node_modules
+
+忽略 Next.js 的构建缓存
+
+.next
+
+忽略本地环境变量文件 (非常重要！)
+
+.env.local
+
+忽略 Git 目录
+
+.git
+.gitignore
+
+忽略 Docker 相关文件
+
+Dockerfile
+.dockerignore
+
+忽略 README 和其他文档
+
+README.md
+DATABASE_SETUP.md
