@@ -3,6 +3,48 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Mic, Square } from "lucide-react";
 
+interface SpeechRecognitionAlternative {
+	transcript?: string;
+}
+
+interface SpeechRecognitionResult {
+	isFinal: boolean;
+	length: number;
+	item(index: number): SpeechRecognitionAlternative;
+	[index: number]: SpeechRecognitionAlternative;
+}
+
+interface SpeechRecognitionResultList extends Iterable<SpeechRecognitionResult> {
+	length: number;
+	item(index: number): SpeechRecognitionResult;
+	[index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionEvent extends Event {
+	results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognition {
+	lang: string;
+	interimResults: boolean;
+	continuous: boolean;
+	start: () => void;
+	stop: () => void;
+	abort?: () => void;
+	onresult: ((event: SpeechRecognitionEvent) => void) | null;
+	onend: (() => void) | null;
+	onerror: ((event: any) => void) | null;
+}
+
+type SpeechRecognitionConstructor = new () => SpeechRecognition;
+
+declare global {
+	interface Window {
+		webkitSpeechRecognition?: SpeechRecognitionConstructor;
+		SpeechRecognition?: SpeechRecognitionConstructor;
+	}
+}
+
 type Props = {
 	onTranscript: (text: string) => void;
 	className?: string;
