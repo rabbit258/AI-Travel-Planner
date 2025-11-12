@@ -1,0 +1,66 @@
+# .github/workflows/docker-push-acr.yml
+
+name: Build and Push Docker Image to Alibaba Cloud ACR
+
+# 触发工作流的事件
+on:
+  push:
+    branches:
+      - main  # 仅在 main 分支被推送时触发
+    tags:
+      - 'v*' # 或者在推送 v 开头的 tag 时触发
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest # 使用最新的 Ubuntu 运行器
+    
+    steps:
+      # 步骤 1: 检出代码
+      # 拉取你的仓库代码到 Actions 运行器中
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 步骤 2: 设置 Docker Buildx
+      # 这是一个高级的 Docker 构建工具，推荐使用
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 步骤 3: 登录到阿里云 ACR
+      # 使用你存储在 GitHub Secrets 中的凭证
+      - name: Login to Alibaba Cloud ACR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.ACR_REGISTRY }} # 登录的仓库地址
+          username: ${{ secrets.ACR_USERNAME }} # 你的 AccessKey ID
+          password: ${{ secrets.ACR_PASSWORD }} # 你的 AccessKey Secret
+      
+      # 步骤 4: 动态定义镜像元数据（名称和标签）
+      # 这一步会智能地为你创建 Docker 标签
+      - name: Extract Docker metadata
+        id: meta # 给这个步骤设置一个 ID，方便后面引用
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.ACR_REGISTRY }}/1604456428/homework # 替换为你的 "仓库地址/命名空间/镜像名称"
+          tags: |
+            type=schedule
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=,format=short # 使用短 SHA 作为标签，例如：sha-7347963
+            
+            # 如果是 main 分支，自动打上 latest 标签
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      # 步骤 5: 构建并推送到 ACR
+      # 这一步是核心，它会构建 Dockerfile 并推送到阿里云
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: . # Dockerfile 的上下文路径（. 代表仓库根目录）
+          file: ./Dockerfile # Dockerfile 的路径
+          push: ${{ github.event_name != 'pull_request' }} # 仅在非 PR 事件时才推送
+          tags: ${{ steps.meta.outputs.tags }} # 使用上一步 (id: meta) 生成的所有标签
+          labels: ${{ steps.meta.outputs.labels }} # 自动添加镜像元数据
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
